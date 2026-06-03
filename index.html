@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Drew Jennings — AI Operating System</title>
+<style>
+  :root {
+    /* Brand palette sampled from source */
+    --cyan:      #0890af;
+    --teal:      #0e748f;
+    --teal-grn:  #0f7670;
+    --grad: linear-gradient(100deg, #0890af 0%, #0e748f 52%, #0f7670 100%);
+    --ink:       #13232b;   /* primary dark / Notion box */
+    --navy:      #0b1519;   /* stats band */
+    --pulls:     #0b4f66;   /* pulls-context band */
+    --accent:    #22d3ee;   /* stat numerals */
+    --body:      #44555d;   /* body copy */
+    --muted:     #8a9ea6;   /* eyebrow labels */
+    --line:      #e3eaed;   /* hairlines / card borders */
+    --paper:     #ffffff;
+
+    /* Spacing scale — one source of truth for vertical rhythm */
+    --pad-x: 46px;
+    --sec-gap: 7px;       /* between numbered sections */
+    --head-gap: 8px;      /* section header -> its body */
+    --stack: 14px;        /* generic stacking gap */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: #d9dee1;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .page {
+    width: 816px;
+    min-height: 1056px;
+    margin: 36px auto;
+    background: var(--paper);
+    box-shadow: 0 14px 50px rgba(0,0,0,.22);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ───────────────────────── HEADER ───────────────────────── */
+  .masthead {
+    background: var(--grad);
+    color: #fff;
+    padding: 13px var(--pad-x);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mast-name { font-size: 27px; font-weight: 800; letter-spacing: -0.01em; line-height: 1; }
+  .mast-role { font-size: 11.5px; font-weight: 600; letter-spacing: 0.2em; margin-top: 7px; color: rgba(255,255,255,.85); }
+  .mast-tag  { font-size: 13px; font-weight: 700; letter-spacing: 0.22em; color: rgba(255,255,255,.92); }
+
+  /* ───────────────────────── BODY ───────────────────────── */
+  .content { padding: 11px var(--pad-x) 0; flex: 1; }
+
+  .eyebrow {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.16em;
+    color: var(--teal);
+  }
+  .title {
+    font-size: 33px; font-weight: 800; line-height: 1.04;
+    letter-spacing: -0.022em; color: var(--ink);
+    margin-top: 9px;
+  }
+  .lede {
+    font-size: 15px; font-weight: 700; line-height: 1.32;
+    color: #146a83; max-width: 92%;
+    margin-top: 11px;
+  }
+  .accent-bar {
+    width: 60px; height: 4px; border-radius: 2px;
+    background: var(--grad);
+    margin: 8px 0 2px;
+  }
+
+  /* Section header */
+  .sec {
+    display: flex; align-items: center; gap: 13px;
+    margin-top: var(--sec-gap);
+  }
+  .badge {
+    background: var(--teal); color: #fff;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 4px 9px; border-radius: 3px; line-height: 1.1;
+  }
+  .sec-title {
+    font-size: 16px; font-weight: 800; letter-spacing: 0.07em;
+    color: var(--ink); white-space: nowrap;
+  }
+  .rule {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(14,116,143,.42), rgba(14,116,143,0));
+  }
+  .prose {
+    font-size: 11.5px; line-height: 1.42; color: var(--body);
+    margin-top: var(--head-gap); max-width: 100%;
+    text-wrap: pretty;
+  }
+  .prose b { color: var(--teal); font-weight: 700; }
+
+  .caption {
+    font-size: 12px; font-style: italic; line-height: 1.42;
+    color: #6b7d85; margin-top: var(--head-gap);
+    text-wrap: pretty;
+  }
+
+  /* ───────────────────────── DIAGRAM ───────────────────────── */
+  .diagram {
+    position: relative;
+    margin-top: 12px;
+    min-height: 224px;
+    display: grid;
+    grid-template-columns: 196px 1fr 174px 1fr 196px;
+    align-items: stretch;
+  }
+  .col-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em;
+    color: var(--muted); margin-bottom: 11px;
+  }
+  .col-label.right { text-align: right; }
+  .col-label.center { text-align: center; }
+
+  .wires {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 1;
+    overflow: visible;
+  }
+  .wire { fill: none; stroke: #2f8ba1; stroke-width: 1.6; opacity: .5; }
+  .head { fill: #2f8ba1; opacity: .9; }
+
+  .col { position: relative; z-index: 2; display: flex; flex-direction: column; }
+  .col.inputs  { justify-content: flex-start; }
+  .col.outputs { justify-content: flex-start; }
+  .col-cards { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+  .core { justify-content: flex-start; align-items: stretch; }
+  .core-inner { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 11px; }
+
+  .card {
+    background: #fff; border: 1px solid var(--line);
+    border-left: 3px solid var(--teal);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(16,40,50,.05);
+  }
+  .in-card {
+    padding: 8px 11px; font-size: 11.5px; font-weight: 700; color: #1f2f37;
+    line-height: 1.22;
+  }
+  .out-card {
+    padding: 6px 11px; font-size: 12px; font-weight: 700; color: #1f2f37;
+    line-height: 1.2;
+  }
+
+  .core-claude {
+    background: var(--grad); color: #fff;
+    border-radius: 8px; padding: 12px 16px 11px; text-align: center;
+    box-shadow: 0 6px 18px rgba(14,116,143,.28);
+  }
+  .core-claude .cn { font-size: 22px; font-weight: 800; letter-spacing: 0.01em; }
+  .core-claude .cd { font-size: 10.5px; font-weight: 500; line-height: 1.32; color: rgba(255,255,255,.9); margin-top: 7px; }
+  .core-notion {
+    background: var(--ink); color: #fff;
+    border-radius: 8px; padding: 11px 16px; text-align: center;
+    box-shadow: 0 6px 16px rgba(11,21,25,.3);
+  }
+  .core-notion .cn { font-size: 17px; font-weight: 800; letter-spacing: 0.01em; }
+  .core-notion .cd { font-size: 9.5px; font-weight: 600; letter-spacing: 0.14em; color: rgba(255,255,255,.62); margin-top: 5px; }
+
+  /* Pulls context band */
+  .pulls {
+    background: var(--pulls); border-radius: 9px;
+    margin-top: 13px;
+    padding: 8px 18px;
+    display: flex; align-items: center; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .pulls-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; color: rgba(255,255,255,.92); white-space: nowrap; }
+  .chips { display: flex; gap: 10px; flex: 1; flex-wrap: wrap; }
+  .chip {
+    background: #fff; color: var(--teal);
+    font-size: 12px; font-weight: 700;
+    padding: 7px 16px; border-radius: 100px;
+    flex: 1; text-align: center; white-space: nowrap;
+  }
+
+  /* Stats band */
+  .stats {
+    background: var(--navy); border-radius: 11px;
+    margin-top: 13px;
+    padding: 12px 30px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+  }
+  .stat { padding: 0 26px; position: relative; }
+  .stat:first-child { padding-left: 0; }
+  .stat + .stat::before {
+    content: ""; position: absolute; left: 0; top: 4px; bottom: 4px;
+    width: 1px; background: rgba(255,255,255,.14);
+  }
+  .stat-num { font-size: 35px; font-weight: 800; color: var(--accent); line-height: 1; letter-spacing: -0.01em; }
+  .stat-desc { font-size: 11.5px; line-height: 1.4; color: rgba(255,255,255,.72); margin-top: 9px; }
+
+  /* ───────────────────────── FOOTER ───────────────────────── */
+  .footer { margin-top: 6px; background: var(--grad); color: #fff; }
+  .footer-main { padding: 10px var(--pad-x) 9px; }
+  .footer-small { font-size: 12px; font-weight: 500; color: rgba(255,255,255,.85); }
+  .footer-big { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; margin-top: 6px; line-height: 1.12; }
+  .footer-bar {
+    background: rgba(0,0,0,.16);
+    padding: 10px var(--pad-x);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-bar .l { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: rgba(255,255,255,.9); }
+  .footer-bar .r { font-size: 12px; font-weight: 500; color: rgba(255,255,255,.92); }
+  .footer-bar .r b { font-weight: 800; margin-right: 6px; }
+
+  /* ───────────────────────── PRINT ───────────────────────── */
+  @page { size: 816px 1056px; margin: 0; }
+  @media print {
+    html, body { background: #fff; }
+    .page { margin: 0; box-shadow: none; width: 816px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page" data-screen-label="Capability Overview">
+    <!-- HEADER -->
+    <header class="masthead">
+      <div>
+        <div class="mast-name">Drew Jennings</div>
+        <div class="mast-role">AI CONSULTANT</div>
+      </div>
+      <div class="mast-tag">CAPABILITY OVERVIEW</div>
+    </header>
+
+    <div class="content">
+      <div class="eyebrow">AI STRATEGY &nbsp;·&nbsp; WORKFLOW AUTOMATION &nbsp;·&nbsp; SALESFORCE OPERATIONS</div>
+      <h1 class="title">An AI Operating System<br />That Runs a Business</h1>
+      <p class="lede">I designed, built, and deployed it for SiiMPLY7, the Salesforce consulting firm I work with. Full scoping proposals now take under an hour, down from days.</p>
+      <div class="accent-bar"></div>
+
+      <!-- 01 -->
+      <div class="sec">
+        <span class="badge">01</span>
+        <h3 class="sec-title">THE PROBLEM</h3>
+        <span class="rule"></span>
+      </div>
+      <p class="prose">Consulting firms run on knowledge trapped in a few people's heads. Proposals get rebuilt from scratch every time, contracts and client records drift out of sync, and the real bottleneck is rarely the writing. It is waiting on an architect or developer to stop building long enough to scope the work, price it, and estimate the hours. Every hour spent on that is an hour not spent in front of a client.</p>
+
+      <!-- 02 -->
+      <div class="sec">
+        <span class="badge">02</span>
+        <h3 class="sec-title">WHAT I BUILT</h3>
+        <span class="rule"></span>
+      </div>
+      <p class="prose">I chose <b>Claude</b> and <b>Notion</b> as the foundation, fit them alongside the tools the team already relied on, then trained the system on every scope of work we had ever produced. It learned what we build, what we charge, and how long the work actually takes. On top of that sits a library of purpose-built skills, each trained on our own document standards, so the system can scope, price, and draft an engagement on its own, in our format and our voice.</p>
+
+      <!-- 03 -->
+      <div class="sec">
+        <span class="badge">03</span>
+        <h3 class="sec-title">THE SYSTEM</h3>
+        <span class="rule"></span>
+      </div>
+      <p class="caption">One input moves through the whole engagement. A discovery call goes in; a priced proposal, a ready-to-sign agreement, and eventually a finished case study come out.</p>
+
+      <div class="diagram" id="diagram">
+        <!-- column labels row sits inside each col so grid aligns -->
+        <div class="col inputs">
+          <div class="col-label">INPUTS</div>
+          <div class="col-cards">
+            <div class="card in-card">Discovery call &amp; transcript</div>
+            <div class="card in-card">Slack conversations (partner &amp; internal)</div>
+            <div class="card in-card">Project meeting transcripts (Fireflies)</div>
+            <div class="card in-card">Every past scope of work</div>
+            <div class="card in-card">Client context &amp; goals</div>
+          </div>
+        </div>
+        <div></div>
+        <div class="col core">
+          <div class="col-label center">THE CORE</div>
+          <div class="core-inner">
+            <div class="core-claude" id="coreClaude">
+              <div class="cn">CLAUDE</div>
+              <div class="cd">Trained on our standards, rates &amp; historical scopes. Runs the skill library.</div>
+            </div>
+            <div class="core-notion">
+              <div class="cn">NOTION</div>
+              <div class="cd">SYSTEM OF RECORD</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+        <div class="col outputs">
+          <div class="col-label right">OUTPUTS</div>
+          <div class="col-cards">
+            <div class="card out-card">Priced Scope of Work</div>
+            <div class="card out-card">Consulting Agreement</div>
+            <div class="card out-card">AI Readiness Assessment</div>
+            <div class="card out-card">Prospecting Cadence</div>
+            <div class="card out-card">Executive Read-Out Presentation</div>
+            <div class="card out-card">Client Case Study</div>
+          </div>
+        </div>
+
+        <svg class="wires" id="wires" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="pulls">
+        <div class="pulls-label">PULLS CONTEXT FROM</div>
+        <div class="chips">
+          <span class="chip">Google Drive</span>
+          <span class="chip">Fireflies</span>
+          <span class="chip">Slack</span>
+          <span class="chip">Gmail</span>
+          <span class="chip">Canva</span>
+        </div>
+      </div>
+
+      <!-- 04 -->
+      <div class="sec">
+        <span class="badge">04</span>
+        <h3 class="sec-title">WHAT CHANGED</h3>
+        <span class="rule"></span>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num">&lt; 1 hr</div>
+          <div class="stat-desc">A full, priced scoping proposal, down from days of back and forth</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">10+</div>
+          <div class="stat-desc">Document types it drafts in our voice, from proposals to case studies</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">1 input</div>
+          <div class="stat-desc">A single discovery call flows all the way to a finished case study</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-main">
+        <div class="footer-small">The same system can be built for any team buried in repeatable, document-heavy work.</div>
+        <div class="footer-big">AI that has stopped being a demo and become infrastructure.</div>
+      </div>
+      <div class="footer-bar">
+        <div class="l">DREW JENNINGS &nbsp;·&nbsp; AI CONSULTANT</div>
+        <div class="r"><b>E</b> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="05617760726f60456268646c692b666a68">[email&#160;protected]</a></div>
+      </div>
+    </footer>
+  </div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  function drawWires() {
+    const diagram = document.getElementById('diagram');
+    const svg = document.getElementById('wires');
+    const claude = document.getElementById('coreClaude');
+    if (!diagram || !svg || !claude) return;
+
+    const r = diagram.getBoundingClientRect();
+    const W = r.width, H = r.height;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    const anchor = (el, side) => {
+      const b = el.getBoundingClientRect();
+      const y = b.top + b.height / 2 - r.top;
+      const x = (side === 'right' ? b.right : b.left) - r.left;
+      return { x, y };
+    };
+
+    const cb = claude.getBoundingClientRect();
+    const inPt  = { x: cb.left  - r.left, y: cb.top + cb.height / 2 - r.top };
+    const outPt = { x: cb.right - r.left, y: cb.top + cb.height / 2 - r.top };
+
+    const inputs  = [...diagram.querySelectorAll('.in-card')].map(el => anchor(el, 'right'));
+    const outputs = [...diagram.querySelectorAll('.out-card')].map(el => anchor(el, 'left'));
+
+    const GAP = 9; // room for the arrowhead
+    let d = '';
+
+    // inputs -> single point on CLAUDE's left edge
+    const inTip = { x: inPt.x, y: inPt.y };
+    const inEnd = { x: inPt.x - GAP, y: inPt.y };
+    inputs.forEach(p => {
+      const dx = inEnd.x - p.x;
+      d += `<path class="wire" d="M ${p.x} ${p.y} C ${p.x + dx*0.55} ${p.y}, ${inEnd.x - dx*0.55} ${inEnd.y}, ${inEnd.x} ${inEnd.y}"/>`;
+    });
+
+    // CLAUDE right edge -> each output card's left edge
+    outputs.forEach(p => {
+      const end = { x: p.x - GAP, y: p.y };
+      const dx = end.x - outPt.x;
+      d += `<path class="wire" d="M ${outPt.x} ${outPt.y} C ${outPt.x + dx*0.5} ${outPt.y}, ${end.x - dx*0.5} ${end.y}, ${end.x} ${end.y}"/>`;
+    });
+
+    // arrowheads (filled chevrons pointing right, tip on the edge)
+    const head = (x, y) => {
+      const s = 7, h = 4.6;
+      return `<path class="head" d="M ${x - s} ${y - h} L ${x} ${y} L ${x - s} ${y + h} Z"/>`;
+    };
+    d += head(inTip.x, inTip.y);
+    outputs.forEach(p => d += head(p.x, p.y));
+
+    svg.innerHTML = d;
+  }
+
+  window.addEventListener('load', () => { drawWires(); setTimeout(drawWires, 60); });
+  window.addEventListener('resize', drawWires);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawWires);
+</script>
+</body>
+</html>
